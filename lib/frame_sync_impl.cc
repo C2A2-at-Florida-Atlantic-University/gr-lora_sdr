@@ -634,8 +634,7 @@ namespace gr
                     volk_32fc_x2_multiply_32fc(&preamble_upchirps[0], &preamble_upchirps[0], &CFO_int_correc[0], up_symb_to_use * m_number_of_bins);
 
                     // correct SFO in the preamble upchirps
-
-                    sfo_hat = float((m_cfo_int + m_cfo_frac) * m_bw) / m_center_freq;
+                    sfo_hat = (m_center_freq >= 10 * m_bw) ? float((m_cfo_int + m_cfo_frac) * m_bw) / m_center_freq : 0.0f;
                     double clk_off = sfo_hat / m_number_of_bins;
                     double fs = m_bw;
                     double fs_p = m_bw * (1 - clk_off);
@@ -684,14 +683,10 @@ namespace gr
 
                     // update sto_frac to its value at the beginning of the net id
                     m_sto_frac += sfo_hat * m_preamb_len;
-                    // ensure that m_sto_frac is in [-0.5,0.5], repeat until m_sto_frac is in bounds.
-                    while (m_sto_frac > 0.5)
+                    // ensure that m_sto_frac is in [-0.5,0.5]
+                    if (abs(m_sto_frac) > 0.5)
                     {
-                        m_sto_frac -= 1.0;
-                    }
-                    while (m_sto_frac < -0.5)
-                    {
-                        m_sto_frac += 1.0;
+                        m_sto_frac = m_sto_frac + (m_sto_frac > 0 ? -1 : 1);
                     }
                     // decim net id according to new sto_frac and sto int
                     std::vector<gr_complex> net_ids_samp_dec;
